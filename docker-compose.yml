@@ -1,28 +1,8 @@
-letsencrypt:
-  container_name: loomio-letsencrypt
-  restart: always
-  image: jrcs/letsencrypt-nginx-proxy-companion
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    - ./certificates:/etc/nginx/certs:rw
-  volumes_from:
-    - nginx
+version: '3'
 
-nginx:
-  container_name: loomio-nginx
-  restart: always
-  image: jwilder/nginx-proxy
-  volumes:
-    - /var/run/docker.sock:/tmp/docker.sock:ro
-    - ./certificates:/etc/nginx/certs:ro
-    - ./nginx/vhost.d:/etc/nginx/vhost.d
-    - ./nginx/conf.d/custom.conf:/etc/nginx/conf.d/custom.conf:ro
-    - ./nginx/html:/usr/share/nginx/html
-  ports:
-    - 80:80
-    - 443:443
-  links:
-    - app
+networks:
+  traefik_traefik:
+    external: true
 
 app:
   container_name: loomio-app
@@ -30,6 +10,9 @@ app:
   image: ${LOOMIO_CONTAINER_IMAGE}:${LOOMIO_CONTAINER_TAG}
   expose:
     - 3000
+  networks:
+    - traefik_traefik
+    - default
   env_file: ./env
   links:
     - db
@@ -44,6 +27,12 @@ app:
     - ./files:/loomio/public/files
     - ./plugins:/loomio/plugins/docker
     - ./import:/import
+  labels:
+    - traefik.frontend.rule=Host:loomio.goingnowhere.org
+    - traefik.frontend.entryPoints=https
+    - traefik.enable=true
+    - traefik.port=3000
+    - traefik.docker.network=traefik_traefik
 
 worker:
   container_name: loomio-worker
@@ -81,13 +70,14 @@ redis:
   restart: always
   image: redis:5.0
 
-mailin:
-  container_name: loomio-mailin
-  restart: always
-  image: ${MAILIN_CONTAINER_IMAGE}:${MAILIN_CONTAINER_TAG}
-  ports:
-    - "25:25"
-  links:
-    - app
-  environment:
-    - WEBHOOK_URL=http://app:3000/email_processor/
+# Need to make sure this doesn't conflict with mail server
+# mailin:
+#   container_name: loomio-mailin
+#   restart: always
+#   image: ${MAILIN_CONTAINER_IMAGE}:${MAILIN_CONTAINER_TAG}
+#   ports:
+#     - "25:25"
+#   links:
+#     - app
+#   environment:
+#     - WEBHOOK_URL=http://app:3000/email_processor/
