@@ -1,83 +1,93 @@
-version: '3'
+version: "3"
+
+volumes:
+  app_client:
+  app_uploads:
+  app_storage:
+  app_files:
+  app_plugins:
+  app_import:
+  db_data:
+  db_dumps:
 
 networks:
   traefik_traefik:
     external: true
 
-app:
-  container_name: loomio-app
-  restart: always
-  image: ${LOOMIO_CONTAINER_IMAGE}:${LOOMIO_CONTAINER_TAG}
-  expose:
-    - 3000
-  networks:
-    - traefik_traefik
-    - default
-  env_file: ./env
-  links:
-    - db
-    - redis
-  environment:
-    - DATABASE_URL=postgresql://postgres:password@db/loomio_production
-    - REDIS_URL=redis://redis:6379
-  volumes:
-    - ./client:/loomio/public/client
-    - ./uploads:/loomio/public/system
-    - ./storage:/loomio/storage
-    - ./files:/loomio/public/files
-    - ./plugins:/loomio/plugins/docker
-    - ./import:/import
-  labels:
-    - traefik.frontend.rule=Host:loomio.goingnowhere.org
-    - traefik.frontend.entryPoints=https
-    - traefik.enable=true
-    - traefik.port=3000
-    - traefik.docker.network=traefik_traefik
+services:
+  app:
+    container_name: loomio-app
+    restart: always
+    image: ${LOOMIO_CONTAINER_IMAGE}:${LOOMIO_CONTAINER_TAG}
+    expose:
+      - 3000
+    networks:
+      - traefik_traefik
+      - default
+    env_file: ./env
+    links:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db/loomio_production
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - app_client:/loomio/public/client
+      - app_uploads:/loomio/public/system
+      - app_storage:/loomio/storage
+      - app_files:/loomio/public/files
+      - app_plugins:/loomio/plugins/docker
+      - app_import:/import
+    labels:
+      - traefik.frontend.rule=Host:loomio.goingnowhere.org
+      - traefik.frontend.entryPoints=https
+      - traefik.enable=true
+      - traefik.port=3000
+      - traefik.docker.network=traefik_traefik
 
-worker:
-  container_name: loomio-worker
-  restart: always
-  image: ${LOOMIO_CONTAINER_IMAGE}:${LOOMIO_CONTAINER_TAG}
-  env_file: ./env
-  links:
-    - db
-    - redis
-  environment:
-    - DATABASE_URL=postgresql://postgres:password@db/loomio_production
-    - REDIS_URL=redis://redis:6379
-    - TASK=worker
-  volumes:
-    - ./client:/loomio/public/client
-    - ./uploads:/loomio/public/system
-    - ./storage:/loomio/storage
-    - ./files:/loomio/public/files
-    - ./plugins:/loomio/plugins/docker
+  worker:
+    container_name: loomio-worker
+    restart: always
+    image: ${LOOMIO_CONTAINER_IMAGE}:${LOOMIO_CONTAINER_TAG}
+    env_file: ./env
+    links:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db/loomio_production
+      - REDIS_URL=redis://redis:6379
+      - TASK=worker
+    volumes:
+      - app_client:/loomio/public/client
+      - app_uploads:/loomio/public/system
+      - app_storage:/loomio/storage
+      - app_files:/loomio/public/files
+      - app_plugins:/loomio/plugins/docker
 
-db:
-  container_name: loomio-db
-  restart: always
-  image: postgres:${POSTGRES_CONTAINER_TAG}
-  volumes:
-    - ./pgdata:/pgdata
-    - ./pgdumps:/pgdumps
-  environment:
-   - POSTGRES_PASSWORD=password
-   - POSTGRES_DB=loomio_production
-   - PGDATA=/pgdata
+  db:
+    container_name: loomio-db
+    restart: always
+    image: postgres:${POSTGRES_CONTAINER_TAG}
+    volumes:
+      - db_data:/pgdata
+      - db_dumps:/pgdumps
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=loomio_production
+      - PGDATA=/pgdata
 
-redis:
-  container_name: loomio-redis
-  restart: always
-  image: redis:5.0
-
-# Need to make sure this doesn't conflict with mail server
-# mailin:
-#   container_name: loomio-mailin
-#   restart: always
-#   image: ${MAILIN_CONTAINER_IMAGE}:${MAILIN_CONTAINER_TAG}
-#   ports:
-#     - "25:25"
-#   links:
-#     - app
-#   environment:
-#     - WEBHOOK_URL=http://app:3000/email_processor/
+  redis:
+    container_name: loomio-redis
+    restart: always
+    image: redis:5.0
+  # Need to make sure this doesn't conflict with mail server
+  # mailin:
+  #   container_name: loomio-mailin
+  #   restart: always
+  #   image: ${MAILIN_CONTAINER_IMAGE}:${MAILIN_CONTAINER_TAG}
+  #   ports:
+  #     - "25:25"
+  #   links:
+  #     - app
+  #   environment:
+  #     - WEBHOOK_URL=http://app:3000/email_processor/
