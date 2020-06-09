@@ -1,8 +1,6 @@
 # get fancy here, but watch out for special characters
 POSTGRES_PASSWORD=somethingrelativlycomplicated
 
-COMPOSE_PROJECT_NAME=loomio
-
 # this is the hostname of your app used by loomio
 CANONICAL_HOST=REPLACE_WITH_HOSTNAME
 # this is the port of your app used by loomio _if different from standard 80/443_
