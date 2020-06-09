@@ -1,9 +1,18 @@
+# get fancy here, but watch out for special characters
+POSTGRES_PASSWORD=somethingrelativlycomplicated
+
+COMPOSE_PROJECT_NAME=loomio
+
 # this is the hostname of your app used by loomio
 CANONICAL_HOST=REPLACE_WITH_HOSTNAME
+# this is the port of your app used by loomio _if different from standard 80/443_
+# CANONICAL_PORT=8443
 
 # this is to tell nginx that you want requests for this hostname to come to the app
 VIRTUAL_HOST=REPLACE_WITH_HOSTNAME
 SITE_NAME=REPLACE_WITH_HOSTNAME
+# or, if using CANONICAL_PORT above
+# SITE_NAME=REPLACE_WITH_HOSTNAME:PORT
 
 # this is to configure letsencrypt to automatically issue and renew your hostname
 LETSENCRYPT_HOST=REPLACE_WITH_HOSTNAME
