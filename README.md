@@ -8,6 +8,7 @@ It runs multiple services on a single host with docker and docker-compose. It au
 an SSL certificate for you via the amazing [letsencrypt.org](https://letsencrypt.org/).
 
 ## What you'll need
+
 * Root access to a server, on a public IP address, running a recent Ubuntu with at least 1GB RAM (2GB recommended).
 
 * A domain name which you can create DNS records for.
@@ -15,6 +16,7 @@ an SSL certificate for you via the amazing [letsencrypt.org](https://letsencrypt
 * An SMTP server for sending email.
 
 ## Network configuration
+
 What hostname will you be using for your Loomio instance? What is the IP address of your server?
 
 For the purposes of this example, the hostname will be loomio.example.com and the IP address is 123.123.123.123
@@ -23,20 +25,20 @@ For the purposes of this example, the hostname will be loomio.example.com and th
 
 To allow people to access the site via your hostname you need an A record:
 
-```
+```sh
 A loomio.example.com, 123.123.123.123
 ```
 
 Loomio supports "Reply by email" and to enable this you need an MX record so mail servers know where to direct these emails.
 
-```
+```sh
 MX loomio.example.com, loomio.example.com, priority 0
 ```
-
 
 ## Configure the server
 
 ### Login as root
+
 To login to the server, open a terminal window and type:
 
 ```sh
@@ -54,6 +56,7 @@ chmod +x /usr/local/bin/docker-compose
 ```
 
 ### Clone the loomio-deploy git repository
+
 This is the place where all the configuration for your Loomio services will live. In this step you make a copy of this repo, so that you can modify the settings to work for your particular setup.
 
 As root on your server, clone this repo:
@@ -66,6 +69,7 @@ cd loomio-deploy
 The commands below assume your working directory is this repo, on your server.
 
 ### Setup a swapfile (optional)
+
 There are some simple scripts within this repo to help you configure your server.
 
 This script will create and mount a 4GB swapfile. If you have less than 2GB RAM on your server then this step is required.
@@ -75,6 +79,7 @@ This script will create and mount a 4GB swapfile. If you have less than 2GB RAM 
 ```
 
 ### Create your ENV files
+
 This script creates `env` files configured for you. It also creates directories on the host to hold user data.
 
 When you run this, remember to change `loomio.example.com` to your hostname, and give your contact email address, so you can recover your SSL keys later if required.
@@ -99,7 +104,7 @@ Once per day it will send those numbers and your hostname to us, so that we are 
 
 If you wish to disable this reporting function, add the following line to your `env` file.
 
-```
+```env
 DISABLE_USAGE_REPORTING=1
 ```
 
@@ -109,13 +114,13 @@ __My personal request is that you do not disable usage reporting__. I have worke
 
 You need to bring your own SMTP server for Loomio to send emails.
 
-If you already have and SMTP, that's great, put the settings into the `env` file.
+If you already have an SMTP server, that's great, put the settings into the `env` file.
 
 For everyone else here are some options to consider:
 
-- Look at the (sometimes free) services offered by [SendGrid](https://sendgrid.com/), [SparkPost](https://www.sparkpost.com/), [Mailgun](http://www.mailgun.com/), [Mailjet](https://www.mailjet.com/pricing).
+* Look at the (sometimes free) services offered by [SendGrid](https://sendgrid.com/), [SparkPost](https://www.sparkpost.com/), [Mailgun](http://www.mailgun.com/), [Mailjet](https://www.mailjet.com/pricing).
 
-- Setup your own SMTP server with something like Haraka
+* Setup your own SMTP server with something like Haraka
 
 Edit the `env` file and enter the right SMTP settings for your setup.
 
@@ -126,30 +131,33 @@ nano env
 ```
 
 ### Initialize the database
+
 This command initializes a new database for your Loomio instance to use.
 
-```
+```sh
 docker-compose up -d db
 docker-compose run app rake db:setup
 ```
 
 ### Install crontab
+
 Doing this tells the server what regular tasks it needs to run. These tasks include:
 
 * Noticing which proposals are closing in 24 hours and notifying users.
 * Closing proposals and notifying users they have closed.
 * Sending "Yesterday on Loomio", a digest of activity users have not already read. This is sent to users at 6am in their local timezone.
 
-Run `crontab -e` and apped the following line:
+Run `crontab -e` and append the following line:
 
-```
+```crontab
 0 * * * *  /snap/bin/docker exec loomio-worker bundle exec rake loomio:hourly_tasks > ~/rake.log 2>&1
 ```
 
 ## Starting the services
+
 This command starts the database, application, reply-by-email, and live-update services all at once.
 
-```
+```sh
 docker-compose up -d
 ```
 
@@ -159,25 +167,25 @@ If you visit the url with your browser and the rails server is not yet running, 
 
 You'll want to see the logs as it all starts, run the following command:
 
-```
+```sh
 docker-compose logs -f
 ```
 
 ## Try it out
 
-visit your hostname in your browser.
+Visit your hostname in your browser.
 
 Once you have signed in (and confirmed your email), grant yourself admin rights
 
-```
+```sh
 docker-compose run app rails c
 User.last.update(is_admin: true)
 ```
 
-you can now access the admin interface at https://loomio.example.com/admin
-
+You can now access the admin interface at https://loomio.example.com/admin
 
 ## If something goes wrong
+
 Confirm `env` settings are correct.
 
 After you change your `env` files you need to restart the system:
@@ -215,22 +223,26 @@ docker exec -ti loomio-db su - postgres -c 'psql loomio_production'
 ```
 
 ## Backups
+
 We have provided a simple backup script to create a tgz file with a database dump and all the user uploads and system config.
 
-```
+```sh
 scripts/create_backup .
 ```
+
 Your backup will be in loomio-deploy/backups/
 
 You may wish to add a crontab entry like this. I'll leave it up to you to configure s3cmd and your aws bucket.
-```
+
+```crontab
 0 0 * * *  ~/loomio-deploy/scripts/create_backup ~/loomio-deploy > ~/backup.log 2>&1; s3cmd put ~/loomio-deploy/backups/* s3://somebucket/$(date +\%F)/ > ~/s3cmd.log 2>&1
 
 ```
 
-# Integrations
+## Integrations
 
-## Login via Nextcloud
-Loomio must be registered in nextcloud as oauth 2.0 client using https://loomio.example.com/nextcloud/authorize as redirection URL.
+### Login via Nextcloud
 
-In loomio the NEXTCLOUD_HOST environment variable must point to the nextcloud instance, for example https://nextcloud.example.com. NEXTCLOUD_APP_KEY and NEXTCLOUD_APP_SECRET must be set to the client identifier and secret set by nextcloud.
+Loomio must be registered in Nextcloud as oauth 2.0 client using https://loomio.example.com/nextcloud/authorize as redirection URL.
+
+In loomio the NEXTCLOUD_HOST environment variable must point to the Nextcloud instance, for example https://nextcloud.example.com. NEXTCLOUD_APP_KEY and NEXTCLOUD_APP_SECRET must be set to the client identifier and secret set by Nextcloud.

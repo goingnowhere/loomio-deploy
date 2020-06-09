@@ -24,7 +24,9 @@ services:
     networks:
       - traefik
       - default
-    env_file: ./.env
+    env_file: 
+      - .env
+      - env
     # links:
     #   - db
     #   - redis
@@ -49,7 +51,9 @@ services:
     # container_name: loomio-worker
     restart: always
     image: ${LOOMIO_CONTAINER_IMAGE}:${LOOMIO_CONTAINER_TAG}
-    env_file: .env
+    env_file: 
+      - .env
+      - env
     networks:
       - default
     # links:
@@ -70,7 +74,9 @@ services:
     # container_name: loomio-db
     restart: always
     image: postgres:${POSTGRES_CONTAINER_TAG}
-    env_file: .env
+    env_file: 
+      - .env
+      - env
     volumes:
       - db_data:/pgdata
       - db_dumps:/pgdumps
@@ -85,7 +91,9 @@ services:
     # container_name: loomio-redis
     restart: always
     image: redis:5.0
-    env_file: .env
+    env_file: 
+      - .env
+      - env
     networks:
       - default
   # Need to make sure this doesn't conflict with mail server
@@ -93,7 +101,9 @@ services:
   #   #container_name: loomio-mailin
   #   restart: always
   #   image: ${MAILIN_CONTAINER_IMAGE}:${MAILIN_CONTAINER_TAG}
-  #   env_file: .env
+  #   env_file: 
+  #     - .env
+  #     - env
   #   ports:
   #     - "25:25"
   #   links:
